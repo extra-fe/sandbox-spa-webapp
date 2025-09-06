@@ -1,0 +1,68 @@
+name: Deploy React to Azure Storage
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get branch name
+        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23.1
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set Environment Variables
+        run: |
+          KEY_VAULT_NAME=$(az keyvault list --query "[?ends_with(name, '${{ env.BRANCH_NAME }}')].name" -o tsv)
+          echo "KEY_VAULT_NAME=${KEY_VAULT_NAME}"
+          echo "VITE_AUTH0_CLIENT_ID=$(az keyvault secret show --name "AUTH0-CLIENT-ID" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"  >> $GITHUB_ENV
+          echo "VITE_AUTH0_DOMAIN=$(az keyvault secret show --name "AUTH0-DOMAIN" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "FRONTEND-STORAGE-ACCOUNT-NAME=$(az keyvault secret show --name "FRONTEND-STORAGE-ACCOUNT-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "FRONTEND-WORKING-DIRECTORY=$(az keyvault secret show --name "FRONTEND-WORKING-DIRECTORY" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "FRONTDOOR-ENDPOINRT-NAME=$(az keyvault secret show --name "FRONTDOOR-ENDPOINRT-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "FRONTDOOR-PROFILE-NAME=$(az keyvault secret show --name "FRONTDOOR-PROFILE-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "RESOURCE-GROUP-NAME=$(az keyvault secret show --name "RESOURCE-GROUP-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: yarn install
+        working-directory: .${{ env.FRONTEND-WORKING-DIRECTORY }}
+
+      - name: Build React app
+        run: yarn run build
+        working-directory: .${{ env.FRONTEND-WORKING-DIRECTORY }}
+
+      - name: Upload to Azure Blob Storage
+        run: |
+          az storage blob upload-batch \
+            --account-name ${{ env.FRONTEND-STORAGE-ACCOUNT-NAME }} \
+            --auth-mode login \
+            --overwrite \
+            -d '$web' \
+            -s .${{ env.FRONTEND-WORKING-DIRECTORY }}/dist
+
+      - name: Purge Front Door Cache
+        run: |
+          az afd endpoint purge \
+          --resource-group ${{ env.RESOURCE-GROUP-NAME }} \
+          --profile-name ${{ env.FRONTDOOR-PROFILE-NAME }}  \
+          --endpoint-name ${{ env.FRONTDOOR-ENDPOINRT-NAME }} \
+          --content-paths '/*'
