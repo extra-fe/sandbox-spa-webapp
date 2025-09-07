@@ -22,3 +22,9 @@ resource "auth0_client" "app" {
     alg = "RS256"
   }
 }
+
+resource "auth0_resource_server" "audience" {
+  name        = "${var.app-name}-${var.environment}-aws-audience"
+  identifier  = "https://${aws_cloudfront_distribution.cdn.domain_name}"
+  signing_alg = "RS256"
+}

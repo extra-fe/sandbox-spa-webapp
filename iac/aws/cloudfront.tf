@@ -44,6 +44,24 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
     origin_id                = local.frontend_origin_id
   }
+  origin {
+    domain_name = aws_lb.alb.dns_name
+    origin_id   = local.backend_origin_id
+
+    vpc_origin_config {
+      vpc_origin_id = aws_cloudfront_vpc_origin.alb.id
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern             = var.api-base-path
+    cache_policy_id          = data.aws_cloudfront_cache_policy.disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
+    target_origin_id         = local.backend_origin_id
+    viewer_protocol_policy   = "allow-all"
+    allowed_methods          = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods           = ["GET", "HEAD"]
+  }
 
   restrictions {
     geo_restriction {
@@ -62,4 +80,31 @@ resource "aws_cloudfront_distribution" "cdn" {
     cloudfront_default_certificate = true
     minimum_protocol_version       = "TLSv1"
   }
+}
+
+locals {
+  backend_origin_id = "${var.app-name}-${var.environment}-backend"
+}
+
+resource "aws_cloudfront_vpc_origin" "alb" {
+  vpc_origin_endpoint_config {
+    name                   = local.backend_origin_id
+    arn                    = aws_lb.alb.arn
+    http_port              = 80
+    https_port             = 443
+    origin_protocol_policy = "http-only"
+
+    origin_ssl_protocols {
+      items    = ["TLSv1.2"]
+      quantity = 1
+    }
+  }
+}
+
+data "aws_cloudfront_cache_policy" "disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer" {
+  name = "Managed-AllViewer"
 }

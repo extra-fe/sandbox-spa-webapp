@@ -148,6 +148,8 @@ resource "aws_codebuild_project" "frontend" {
                    - touch .env
                    - echo "VITE_AUTH0_DOMAIN=${var.auth0_domain}" > .env
                    - echo "VITE_AUTH0_CLIENT_ID=${auth0_client.app.client_id}" >> .env
+                   - echo "VITE_AUTH0_AUDIENCE=https://${aws_cloudfront_distribution.cdn.domain_name}" >> .env
+                   - echo "VITE_API_BASE_URL=https://${aws_cloudfront_distribution.cdn.domain_name}" >> .env
                    - cat .env
                    - yarn install
                    - yarn build
