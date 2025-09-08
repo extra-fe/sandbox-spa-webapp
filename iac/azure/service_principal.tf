@@ -43,3 +43,22 @@ resource "azuread_application_federated_identity_credential" "github_actions" {
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:${var.github_repository_name}:ref:refs/heads/${var.target_branch}"
 }
+
+
+resource "azurerm_role_assignment" "github_actions_acr_push" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPush"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}
+
+resource "azurerm_role_assignment" "github_actions_acr_pull" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}
+
+resource "azurerm_role_assignment" "github_actions_app_service_set_container" {
+  scope                = azurerm_linux_web_app.app.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}

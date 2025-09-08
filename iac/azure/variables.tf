@@ -50,3 +50,23 @@ resource "random_string" "random" {
   numeric = true
   special = false
 }
+
+variable "backend-src-root" {
+  default     = "backend/sandbox-backend"
+  description = "backendのルートパス"
+}
+variable "api-base-path" {
+  default     = "/api/*"
+  description = "backendのbase-path。このpathが増える場合は、FrontDoorのrouteを追加する"
+}
+
+variable "health-check-path" {
+  default     = "/health"
+  description = "backend側で作ったヘルスチェックのエンドポイント"
+}
+
+variable "api-expose-port" {
+  type        = number
+  default     = 3000
+  description = "DockerfileでEXPOSEしているポートを指定"
+}
