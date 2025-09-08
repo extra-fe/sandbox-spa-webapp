@@ -41,6 +41,8 @@ jobs:
           echo "FRONTDOOR-ENDPOINRT-NAME=$(az keyvault secret show --name "FRONTDOOR-ENDPOINRT-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
           echo "FRONTDOOR-PROFILE-NAME=$(az keyvault secret show --name "FRONTDOOR-PROFILE-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
           echo "RESOURCE-GROUP-NAME=$(az keyvault secret show --name "RESOURCE-GROUP-NAME" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
+          echo "VITE_AUTH0_AUDIENCE=$(az keyvault secret show --name "AUTH0-AUDIENCE" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"  >> $GITHUB_ENV
+          echo "VITE_API_BASE_URL=$(az keyvault secret show --name "API-BASE-URL" --vault-name ${KEY_VAULT_NAME} --query "value" -o tsv)"   >> $GITHUB_ENV
 
       - name: Install dependencies
         run: yarn install
