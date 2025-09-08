@@ -146,3 +146,60 @@ resource "azurerm_key_vault_access_policy" "github_actions" {
     azurerm_key_vault_access_policy.terraform_user
   ]
 }
+
+
+resource "azurerm_key_vault_secret" "auth0_audience" {
+  name         = "AUTH0-AUDIENCE"
+  value        = "https://${azurerm_cdn_frontdoor_endpoint.cdn.host_name}"
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
+
+resource "azurerm_key_vault_secret" "api_base_url" {
+  name         = "API-BASE-URL"
+  value        = "https://${azurerm_cdn_frontdoor_endpoint.cdn.host_name}"
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
+
+
+resource "azurerm_key_vault_secret" "acr_name" {
+  name         = "ACR-NAME"
+  value        = azurerm_container_registry.acr.name
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
+
+resource "azurerm_key_vault_secret" "image_name" {
+  name         = "IMAGE-NAME"
+  value        = "${var.app_name}-${var.environment}-backend"
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
+
+resource "azurerm_key_vault_secret" "backend_working_directory" {
+  name         = "BACKEND-WORKING-DIRECTORY"
+  value        = "/${var.backend-src-root}"
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
+
+
+resource "azurerm_key_vault_secret" "backend_app_service_name" {
+  name         = "BACKEND-APP-SERVICE-NAME"
+  value        = azurerm_linux_web_app.app.name
+  key_vault_id = azurerm_key_vault.vault.id
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform_user
+  ]
+}
